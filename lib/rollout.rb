@@ -15,6 +15,7 @@ class Rollout
   def deactivate_all(feature)
     @redis.del(group_key(feature))
     @redis.del(user_key(feature))
+    @redis.del(client_key(feature))
     @redis.del(percentage_key(feature))
   end
 
@@ -26,6 +27,14 @@ class Rollout
     @redis.srem(user_key(feature), user.id)
   end
 
+  def activate_client(feature, client)
+    @redis.sadd(client_key(feature), client.id)
+  end
+
+  def deactivate_client(feature, client)
+    @redis.srem(client_key(feature), client.id)
+  end
+
   def define_group(group, &block)
     @groups[group.to_s] = block
   end
@@ -34,6 +43,12 @@ class Rollout
     user_in_active_group?(feature, user) ||
       user_active?(feature, user) ||
         user_within_active_percentage?(feature, user)
+  end
+
+  def active_for_client?(feature, client)
+    user_in_active_group?(feature, client) ||
+      client_active?(feature, client) ||
+        user_within_active_percentage?(feature, client)
   end
 
   def activate_percentage(feature, percentage)
@@ -57,6 +72,10 @@ class Rollout
       "#{key(name)}:users"
     end
 
+    def client_key(name)
+      "#{key(name)}:clients"
+    end
+
     def percentage_key(name)
       "#{key(name)}:percentage"
     end
@@ -67,6 +86,10 @@ class Rollout
 
     def user_active?(feature, user)
       @redis.sismember(user_key(feature), user.id)
+    end
+
+    def client_active?(feature, client)
+      @redis.sismember(client_key(feature), client.id)
     end
 
     def user_within_active_percentage?(feature, user)

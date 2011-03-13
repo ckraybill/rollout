@@ -59,6 +59,7 @@ describe "Rollout" do
       @rollout.activate_group(:chat, :all)
       @rollout.activate_group(:chat, :fivesonly)
       @rollout.activate_user(:chat, stub(:id => 51))
+      @rollout.activate_client(:chat, stub(:id => 1001))
       @rollout.activate_percentage(:chat, 100)
       @rollout.deactivate_all(:chat)
     end
@@ -69,6 +70,10 @@ describe "Rollout" do
 
     it "removes all of the users" do
       @rollout.should_not be_active(:chat, stub(:id => 51))
+    end
+
+    it "removes all of the clients" do
+      @rollout.should_not be_active_for_client(:chat, stub(:id => 1001))
     end
 
     it "removes the percentage" do
@@ -136,7 +141,6 @@ describe "Rollout" do
     end
   end
 
-
   describe "deactivating the percentage of users" do
     before do
       @rollout.activate_percentage(:chat, 100)
@@ -145,6 +149,36 @@ describe "Rollout" do
 
     it "becomes inactivate for all users" do
       @rollout.should_not be_active(:chat, stub(:id => 24))
+    end
+  end
+
+  describe "activating a specific client" do
+    before do
+      @rollout.activate_client(:chat, stub(:id => 1001))
+    end
+
+    it "is active for that client" do
+      @rollout.should be_active_for_client(:chat, stub(:id => 1001))
+    end
+
+    it "remains inactive for other clients" do
+      @rollout.should_not be_active_for_client(:chat, stub(:id => 1020))
+    end
+  end
+
+  describe "deactivating a specific client" do
+    before do
+      @rollout.activate_client(:chat, stub(:id => 1001))
+      @rollout.activate_client(:chat, stub(:id => 1020))
+      @rollout.deactivate_client(:chat, stub(:id => 1001))
+    end
+
+    it "that client should no longer be active" do
+      @rollout.should_not be_active_for_client(:chat, stub(:id => 1001))
+    end
+
+    it "remains active for other clients" do
+      @rollout.should be_active_for_client(:chat, stub(:id => 1020))
     end
   end
 end
